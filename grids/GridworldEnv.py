@@ -87,3 +87,7 @@ class GridworldEnv(gym.Env):
             print(' ----' * 5 + ' ')
         elif mode == 'ansi':
             pass  # TODO: Implement ASCII rendering for other modes
+     
+    def close(self):
+        # Clean up any resources or processes related to the environment
+        pass

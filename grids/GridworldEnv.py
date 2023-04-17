@@ -75,21 +75,29 @@ class GridworldEnv(gym.Env):
     def render(self, mode='human'):
         # Render gridworld state
         if mode == 'human':
-            # Print gridworld state to console
-            for row in self.grid:
-                print(' '.join([str(cell) for cell in row]))
-            print(f"Agent position: {self.agent_position}")
-        elif mode == 'rgb_array':
-            # Return RGB array representation of gridworld state
-            rgb_array = np.zeros((5, 5, 3), dtype=np.uint8)
+            # Render gridworld in human-readable format
             for i in range(5):
                 for j in range(5):
-                    rgb_array[i, j, :] = [255, 255, 255]  # Set all cells to white initially
-            rgb_array[tuple(self.agent_position)] = [255, 0, 0]  # Set agent position to red
-            return rgb_array
+                    if self.agent_position[0] == i and self.agent_position[1] == j:
+                        print(" A ", end='')
+                    elif self.grid[i, j] == 0:
+                        print(" X ", end='')
+                    else:
+                        print(f" {self.grid[i, j]} ", end='')
+                print()
+        elif mode == 'ansi':
+            # Render gridworld in ANSI format
+            for i in range(5):
+                for j in range(5):
+                    if self.agent_position[0] == i and self.agent_position[1] == j:
+                        print(" A ", end='')
+                    elif self.grid[i, j] == 0:
+                        print(" X ", end='')
+                    else:
+                        print(f" {self.grid[i, j]} ", end='')
+                print()
         else:
-            raise ValueError("Invalid mode. Supported modes are 'human' and 'rgb_array'.")
-     
+            raise ValueError("Invalid render mode. Use 'human' or 'ansi'.")
     def close(self):
         # Clean up any resources or processes related to the environment
         pass

@@ -66,7 +66,7 @@ class GridworldEnv(gym.Env):
         info = {}
 
 
-        return observation, reward, done, truncated, info
+        return observation, reward, done, {'truncated': truncated}
 
     def _get_observation(self):
         # Get current observation based on agent position

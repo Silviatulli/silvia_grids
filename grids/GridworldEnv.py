@@ -7,8 +7,8 @@ class GridworldEnv(gym.Env):
         super(GridworldEnv, self).__init__()
 
         # Define action and observation spaces
-        self.action_space = spaces.Discrete(5)  # Five discrete actions: 0 for up, 1 for down, 2 for left, 3 for right, 4 for stay
-        self.observation_space = spaces.Discrete(19)  # 19 discrete observations representing the 19 cells in the gridworld
+        self.action_space = gym.spaces.Discrete(5)  # Five discrete actions: 0 for up, 1 for down, 2 for left, 3 for right, 4 for stay
+        self.observation_space = gym.spaces.Discrete(19)  # 19 discrete observations representing the 19 cells in the gridworld
 
         # Define gridworld properties
         self.grid = np.array([[1, 2, 3, 4, 5],

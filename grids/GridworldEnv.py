@@ -70,7 +70,12 @@ class GridworldEnv(gym.Env):
 
     def _get_observation(self):
         # Get current observation based on agent position
-        return self.grid[self.agent_position[0], self.agent_position[1]]
+        observation = self.grid[self.agent_position[0], self.agent_position[1]]
+
+        # Ensure that the observation has the correct shape and data type
+        observation = np.array(observation, dtype=self.observation_space.dtype)
+
+        return observation
 
     def render(self, mode='human'):
         # Render gridworld state

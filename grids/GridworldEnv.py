@@ -1,61 +1,89 @@
-import gym
 import numpy as np
-
 import gym
-import numpy as np
 from gym import spaces
-from typing import Tuple
+from gym.utils import seeding
 
-class CustomGridworldEnv(gym.Env):
+class GridworldEnv(gym.Env):
+    metadata = {'render.modes': ['human', 'ansi']}
     
-    def __init__(self):
-        # Define action and observation spaces
-        self.action_space = gym.spaces.Discrete(5)  # Five discrete actions: 0 for up, 1 for down, 2 for left, 3 for right, 4 for stay
-        self.observation_space = gym.spaces.Discrete(19)  # 19 discrete observations representing the 19 cells in the gridworld
-
-        # Define gridworld properties
-        self.grid = np.array([[1, 2, 3, 4, 5],
-                              [6, 0, 7, 0, 8],
-                              [9, 0, 10, 0, 11],
-                              [12, 0, 13, 0, 14],
-                              [15, 16, 17, 18, 19]])
-        self.agent_position = [4, 4]  # Agent starts at bottom-right corner
-        self.rewarding_states = [3, 9, 10, 11]
-        self.reward_values = [1, -1, -1, -1]  # Positive reward for state 3, Negative reward for states 9, 10, and 11; 
-        self.current_step = 0  # Current step counter
-        self.max_steps = 100  # Maximum number of steps per episode
-
-    def reset(self) -> int:
-        self.agent_position = [4, 4]
-        self.current_step = 0
-        return self.grid[tuple(self.agent_position)]
-
-    def step(self, action: int) -> Tuple[int, float, bool, dict]:
+    def __init__(self, grid_size=4, max_steps=100):
+        self.grid_size = grid_size
+        self.max_steps = max_steps
+        
         # Define movements
-        movements = {0: [-1, 0],  # up
-                     1: [1, 0],   # down
-                     2: [0, -1],  # left
-                     3: [0, 1],   # right
-                     4: [0, 0]}   # stay
+        self.movements = {0: [-1, 0],  # up
+                          1: [1, 0],   # down
+                          2: [0, -1],  # left
+                          3: [0, 1],   # right
+                          4: [0, 0]}   # stay
         
-        # Get the new position of the agent
-        new_position = [sum(x) for x in zip(self.agent_position, movements[action])]
+        # Define action and observation spaces
+        self.action_space = spaces.Discrete(len(self.movements))
+        self.observation_space = spaces.Discrete(self.grid_size**2)
         
-        # Check if the new position is valid, if not, stay in the same position
-        if new_position[0] < 0 or new_position[0] > 4 or new_position[1] < 0 or new_position[1] > 4:
+        # Set rewards for special states
+        self.rewarding_states = [(0, 0), (self.grid_size-1, self.grid_size-1)]
+        self.rewarding_state_reward = 10
+        self.normal_state_reward = -1
+        
+        self.seed()
+        self.reset()
+        
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+    
+    def reset(self):
+        self.current_step = 0
+        self.agent_position = [self.np_random.randint(0, self.grid_size),
+                               self.np_random.randint(0, self.grid_size)]
+        return self._get_obs()
+    
+    def step(self, action):
+        if action not in self.movements.keys():
+            raise ValueError("Invalid action")
+        
+        # Calculate new position
+        new_position = [sum(x) for x in zip(self.agent_position, self.movements[action])]
+        
+        # Check if new position is within the grid
+        if (new_position[0] < 0) or (new_position[0] >= self.grid_size) or \
+           (new_position[1] < 0) or (new_position[1] >= self.grid_size):
             new_position = self.agent_position
         
-        # Update agent position
+        # Update position
         self.agent_position = new_position
         
         # Get observation, reward, done and info
-        obs = self.grid[tuple(self.agent_position)]
-        done = (obs in self.rewarding_states) or (self.current_step >= self.max_steps)
-        reward = self.reward_values[self.rewarding_states.index(obs)] if done else 0
+        obs = self._get_obs()
+        done = (self.agent_position in self.rewarding_states) or (self.current_step >= self.max_steps)
+        if self.agent_position in self.rewarding_states:
+            reward = self.rewarding_state_reward
+        else:
+            reward = self.normal_state_reward
+        
         info = {}
         
-        # Update step counter
+        # Increment step count and return step information
         self.current_step += 1
-        
         return obs, reward, done, info
+    
+    def render(self, mode='human'):
+        if mode == 'ansi':
+            return self._to_string()
+        elif mode == 'human':
+            print(self._to_string())
+        else:
+            super(GridworldEnv, self).render(mode=mode)
+            
+    def _get_obs(self):
+        return self.agent_position[0] * self.grid_size + self.agent_position[1]
+    
+    def _to_string(self):
+        grid = np.zeros((self.grid_size, self.grid_size))
+        grid[tuple(self.agent_position)] = 1
+        for rew_state in self.rewarding_states:
+            grid[tuple(rew_state)] = 10
+        
+        return str(grid)
 

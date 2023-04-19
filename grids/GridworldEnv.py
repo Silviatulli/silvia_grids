@@ -1,7 +1,13 @@
 import gym
 import numpy as np
 
-class CustomGridworld(gym.Env):
+import gym
+import numpy as np
+from gym import spaces
+from typing import Tuple
+
+class CustomGridworldEnv(gym.Env):
+    
     def __init__(self):
         # Define action and observation spaces
         self.action_space = gym.spaces.Discrete(5)  # Five discrete actions: 0 for up, 1 for down, 2 for left, 3 for right, 4 for stay
@@ -19,47 +25,37 @@ class CustomGridworld(gym.Env):
         self.current_step = 0  # Current step counter
         self.max_steps = 100  # Maximum number of steps per episode
 
-    def _get_obs(self):
-        # Flatten the gridworld array
-        flattened_grid = self.grid.flatten()
-        
-        # Get the index of the agent's current cell in the flattened array
-        agent_index = np.ravel_multi_index(self.agent_position, self.grid.shape)
-        
-        # Create the observation array by setting the agent's current cell to 1 and all other cells to 0
-        obs = np.zeros_like(flattened_grid)
-        obs[agent_index] = 1
-        
-        return obs
-
-    def reset(self):
+    def reset(self) -> int:
         self.agent_position = [4, 4]
         self.current_step = 0
-        obs = self._get_obs()
-        return obs
+        return self.grid[tuple(self.agent_position)]
 
-    def step(self, action):
-        # Take action and move agent
-        if action == 0:  # Up
-            self.agent_position[0] = max(self.agent_position[0] - 1, 0)
-        elif action == 1:  # Down
-            self.agent_position[0] = min(self.agent_position[0] + 1, self.grid.shape[0] - 1)
-        elif action == 2:  # Left
-            self.agent_position[1] = max(self.agent_position[1] - 1, 0)
-        elif action == 3:  # Right
-            self.agent_position[1] = min(self.agent_position[1] + 1, self.grid.shape[1] - 1)
-
-        # Get observation and reward
-        obs = self._get_obs()
-        reward = 0
-        if self.agent_position in self.rewarding_states:
-            reward = self.reward_values[self.rewarding_states.index(self.agent_position)]
-
-        # Check if episode is done
-        done = False
+    def step(self, action: int) -> Tuple[int, float, bool, dict]:
+        # Define movements
+        movements = {0: [-1, 0],  # up
+                     1: [1, 0],   # down
+                     2: [0, -1],  # left
+                     3: [0, 1],   # right
+                     4: [0, 0]}   # stay
+        
+        # Get the new position of the agent
+        new_position = [sum(x) for x in zip(self.agent_position, movements[action])]
+        
+        # Check if the new position is valid, if not, stay in the same position
+        if new_position[0] < 0 or new_position[0] > 4 or new_position[1] < 0 or new_position[1] > 4:
+            new_position = self.agent_position
+        
+        # Update agent position
+        self.agent_position = new_position
+        
+        # Get observation, reward, done and info
+        obs = self.grid[tuple(self.agent_position)]
+        done = (obs in self.rewarding_states) or (self.current_step >= self.max_steps)
+        reward = self.reward_values[self.rewarding_states.index(obs)] if done else 0
+        info = {}
+        
+        # Update step counter
         self.current_step += 1
-        if self.current_step >= self.max_steps:
-            done = True
-
-        return obs, reward, done, {}
+        
+        return obs, reward, done, info
 
